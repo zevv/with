@@ -3,7 +3,7 @@ import macros
 import sets
 
 
-macro with(obj: typed, cs: untyped): untyped =
+macro with*(obj: typed, cs: untyped): untyped =
 
   # extract list of field names from the given object
 
@@ -29,34 +29,6 @@ macro with(obj: typed, cs: untyped): untyped =
         result.add aux(obj, nc)
 
   result = aux(obj, cs)
-
-
-
-when isMainModule:
-
-  type Foo = ref object
-    first: int
-    second: string
-    third: float
-
-  type Bar = ref object
-    alpha: int
-    beta: string
-
-  var
-    foo = Foo(first: 1, second: "two", third: 3.0)
-    bar = Bar(alpha: 42, beta: "Zephod")
-
-  with foo:
-    if true:
-      echo first
-      second = "hallo"
-      echo third
-
-      with bar:
-        echo alpha
-        echo third
-        alpha = int(third)
 
 # vi: ft=nim et ts=2 sw=2
 
