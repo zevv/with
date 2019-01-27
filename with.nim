@@ -7,7 +7,10 @@ macro with(obj: typed, cs: untyped): untyped =
 
   # extract list of field names from the given object
 
-  let typ = obj.getTypeImpl
+  var typ = obj.getTypeImpl
+  if typ.kind == nnkRefTy:
+    typ = typ[0].getTypeImpl
+
   expectKind(typ, nnkObjectTy)
   expectKind(typ[2], nnkRecList)
   var fields = initSet[string]()
@@ -31,12 +34,12 @@ macro with(obj: typed, cs: untyped): untyped =
 
 when isMainModule:
 
-  type Foo = object
+  type Foo = ref object
     first: int
     second: string
     third: float
 
-  type Bar = object
+  type Bar = ref object
     alpha: int
     beta: string
 
@@ -48,9 +51,12 @@ when isMainModule:
     if true:
       echo first
       second = "hallo"
+      echo third
+
       with bar:
         echo alpha
         echo third
+        alpha = int(third)
 
 # vi: ft=nim et ts=2 sw=2
 
