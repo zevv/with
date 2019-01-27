@@ -43,3 +43,15 @@ block:
 
   with sub:
     doAssert foo.first == 1
+
+block:
+  
+  var foo = Foo(first: 1, second: "two", third: 3.0)
+  
+  with foo:
+    proc test() =
+      doAssert first == 1
+      doAssert second == "two"
+      doAssert third == 3.0
+    test()
+  

@@ -17,7 +17,8 @@ var foo = Foo(first: 1, second: "two", third: 3.0)
 
 with foo:
   echo first
-  third = float(first)
+  if true:
+    third = float(first)
   echo second
 ```
 
