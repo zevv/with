@@ -13,20 +13,22 @@ macro with*(obj: typed, cs: untyped): untyped =
 
   expectKind(typ, nnkObjectTy)
   expectKind(typ[2], nnkRecList)
-  var fields = initSet[string]()
+  var fields: seq[NimNode]
   for id in typ[2]:
-    fields.incl id[0].strVal
+    fields.add id[0]
 
   # recurse through code block AST and replace all identifiers
   # which are a field of the given object by a dotexpr obj.field
 
   proc aux(obj: NimNode, n: NimNode): NimNode =
-    if n.kind == nnkIdent and  n.strVal in fields:
-      result = newDotExpr(obj, n)
-    else:
-      result = copyNimNode(n)
-      for nc in n:
-        result.add aux(obj, nc)
+    if n.kind == nnkIdent:
+      for f in fields:
+        if eqIdent(f, n):
+          return newDotExpr(obj, n)
+
+    result = copyNimNode(n)
+    for nc in n:
+      result.add aux(obj, nc)
 
   result = aux(obj, cs)
 
