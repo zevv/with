@@ -1,11 +1,18 @@
 
 import macros
-import sets
+import hashes
+import strutils
+import tables
 
 
-macro with*(obj: typed, cs: untyped): untyped =
+type Fields = Table[NimNode, NimNode]
+proc hash(n: NimNode): Hash = hashIgnoreStyle(n.strVal)
+proc `==`(a, b: NimNode): bool = cmpIgnoreStyle(a.strVal, b.strVal) == 0
 
-  var fields: seq[NimNode]
+
+# Collect field identifiers from object or tuple
+
+proc collectFields(obj: NimNode, fields: var Fields) =
 
   # Get the type of the object, de-ref if needed
 
@@ -17,44 +24,46 @@ macro with*(obj: typed, cs: untyped): untyped =
 
   if typ.kind == nnkObjectTy:
     for id in typ[2]:
-      fields.add id[0]
+      fields[id[0]] = obj
   elif typ.kind == nnkTupleTy:
     for id in typ:
-      fields.add id[0]
+      fields[id[0]] = obj
   else:
     error "Expected object or tuple"
 
-  # Helper function for recursion
 
-  proc aux(obj: NimNode, n: NimNode): NimNode =
+# Helper function for recursing through the code block
 
-    # 'const, 'let' or 'var' shadows variables by removing them
-    # from the fields list
+proc doBlock(n: NimNode, fields: var Fields): NimNode =
 
-    if n.kind in {nnkConstSection,nnkLetSection,nnkVarSection}:
-      for nid in n:
-        var delIdx = -1
-        for i, f in fields.pairs:
-          if eqIdent(f, nid[0]): delIdx = i
-        if delIdx != -1: fields.del delIdx
+  # 'const, 'let' or 'var' shadows variables by removing them
+  # from the fields list
 
-    # Replace with dotExpr if identifier found in fields list
+  if n.kind in {nnkConstSection,nnkLetSection,nnkVarSection}:
+    for nid in n:
+      fields.del nid[0]
 
-    if n.kind == nnkIdent:
-      for f in fields:
-        if eqIdent(f, n):
-          return newDotExpr(obj, n)
+  # Replace with dotExpr if identifier found in fields list
 
-    # Recurse through all children
+  if n.kind == nnkIdent:
+    if n in fields:
+      return newDotExpr(fields[n], n)
 
-    result = copyNimNode(n)
-    for i, nc in n.pairs:
-      if n.kind == nnkDotExpr and i != 0:
-        result.add nc
-      else:
-        result.add aux(obj, nc)
+  # Recurse through all children
 
-  result = aux(obj, cs)
+  result = copyNimNode(n)
+  for i, nc in n.pairs:
+    if n.kind == nnkDotExpr and i != 0:
+      result.add nc
+    else:
+      result.add doBlock(nc, fields)
+
+
+macro with*(obj: typed, cs: untyped): untyped =
+  var fields = initTable[NimNode, NimNode]()
+  collectFields(obj, fields)
+  result = doBlock(cs, fields)
+
 
 # vi: ft=nim et ts=2 sw=2
 

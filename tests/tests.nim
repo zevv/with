@@ -32,6 +32,15 @@ suite "with":
     with foo:
       check first == 1
       check second == "two"
+  
+  test "case insensitive":
+
+    var foo = Foo(first: 1, second: "two", third: 3.0)
+
+    with foo:
+      check first == 1
+      check fiRSt == 1
+      check fi_rst == 1
 
   test "nested 'with'":
 
