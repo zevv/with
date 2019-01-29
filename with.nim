@@ -51,6 +51,7 @@ proc doBlock(n: NimNode, fields: var Fields): NimNode =
 
   # Recurse through all children
 
+  var fields = fields
   result = copyNimNode(n)
   for i, nc in n.pairs:
     if n.kind == nnkDotExpr and i != 0:
@@ -61,9 +62,12 @@ proc doBlock(n: NimNode, fields: var Fields): NimNode =
 
 macro with*(obj: typed, cs: untyped): untyped =
   var fields = initTable[NimNode, NimNode]()
-  collectFields(obj, fields)
+  if obj.kind == nnkTupleConstr:
+    for cobj in obj:
+      collectFields(cobj, fields)
+  else:
+    collectFields(obj, fields)
   result = doBlock(cs, fields)
-
 
 # vi: ft=nim et ts=2 sw=2
 

@@ -34,13 +34,35 @@ with foo:
 
 
 Fields from the object can be shadowed by new declarations. Use the fully
-qualified dot notation to access the original member:
+qualified dot notation to access the original member if the field has been
+shadowed. Shadowing is only effictive in the scope where the new declaration
+was made, outside that scope the original `with` behaviour applies:
 
 ```nim
 var foo = (first: 1, second: "two")
 with foo:
-  doAssert first == 1 
-  let first = "dragons"
-  doAssert first == "dragons" 
-  doAssert foo.first == 1
+  assert first == 1
+  if true:
+    let first = "dragons"
+    assert first == "dragons" 
+    assert foo.first == 1
+  assert first == 1
+  assert foo.first == 1
+```
+
+
+For the brave, ``with`` blocks can be nested, or multiple objects can be passed
+in a tuple constructor. Make sure that field names are unique in the nested
+objects:
+
+```nim
+var foo = (first: 1, second: "two")
+var bar = (alpha: 42)
+
+with foo:
+  with bar:
+    first = alpha
+
+with (foo,bar):
+  first = alpha
 ```

@@ -54,6 +54,18 @@ suite "with":
         check third == 3.0
         check alpha == 10
         check beta == "twenty"
+  
+  test "multiple 'with'":
+
+    var foo = Foo(first: 1, second: "two", third: 3.0)
+    var bar = Bar(alpha: 10, beta: "twenty")
+
+    with (foo,bar):
+      check first == 1
+      check second == "two"
+      check third == 3.0
+      check alpha == 10
+      check beta == "twenty"
 
   test "dot expressions":
 
@@ -99,8 +111,11 @@ suite "with":
 
       # const
 
-      const first = "dragons"
-      check first == "dragons"
+      if true:
+        const first = "dragons"
+        check first == "dragons"
+        check foo.first == 3
+      check first == 3
       check foo.first == 3
 
       # let
@@ -113,7 +128,9 @@ suite "with":
       # var
 
       check third == 3.0
-      var third = 42.0
-      check third == 42.0
+      if true:
+        var third = 42.0
+        check third == 42.0
+      check third == 3.0
       check foo.third == 3.0
 
