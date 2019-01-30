@@ -4,6 +4,7 @@ import hashes
 import strutils
 import tables
 
+# Style insensitive table for identifier lookups
 
 type Fields = Table[NimNode, NimNode]
 proc hash(n: NimNode): Hash = hashIgnoreStyle(n.strVal)
@@ -36,14 +37,14 @@ proc collectFields(obj: NimNode, fields: var Fields) =
 
 proc doBlock(n: NimNode, fields: var Fields): NimNode =
 
-  # 'const, 'let' or 'var' shadows variables by removing them
-  # from the fields list
+  # fields can be shadowed by operations that declare new symbols
 
   if n.kind in {nnkConstSection,nnkLetSection,nnkVarSection}:
-    for nid in n:
-      fields.del nid[0]
+    for nid in n: fields.del nid[0]
+  if n.kind in {nnkProcDef,nnkFuncDef,nnkIteratorDef,nnkConverterDef}:
+    fields.del n[0]
 
-  # Replace with dotExpr if identifier found in fields list
+  # Replace identifier with dotExpr(obj.field) if found in fields list
 
   if n.kind == nnkIdent:
     if n in fields:

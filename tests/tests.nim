@@ -1,6 +1,6 @@
 import unittest
 import with
-  
+
 type
 
   Foo = object
@@ -11,6 +11,7 @@ type
   Bar = ref object
     alpha: int
     beta: string
+    fn: proc(v: int): int
 
   Sub = object
     foo: Foo
@@ -18,35 +19,28 @@ type
 suite "with":
 
   test "basic object":
-
     var foo = Foo(first: 1, second: "two", third: 3.0)
-
     with foo:
       check first == 1
       check second == "two"
       check third == 3.0
 
   test "basic tuple":
-
     var foo = (first: 1, second: "two")
     with foo:
       check first == 1
       check second == "two"
-  
+
   test "case insensitive":
-
     var foo = Foo(first: 1, second: "two", third: 3.0)
-
     with foo:
       check first == 1
       check fiRSt == 1
       check fi_rst == 1
 
   test "nested 'with'":
-
     var foo = Foo(first: 1, second: "two", third: 3.0)
     var bar = Bar(alpha: 10, beta: "twenty")
-
     with foo:
       check first == 1
       check second == "two"
@@ -54,12 +48,10 @@ suite "with":
         check third == 3.0
         check alpha == 10
         check beta == "twenty"
-  
-  test "multiple 'with'":
 
+  test "multiple 'with'":
     var foo = Foo(first: 1, second: "two", third: 3.0)
     var bar = Bar(alpha: 10, beta: "twenty")
-
     with (foo,bar):
       check first == 1
       check second == "two"
@@ -68,16 +60,12 @@ suite "with":
       check beta == "twenty"
 
   test "dot expressions":
-
     var sub = Sub(foo: Foo(first: 1))
-
     with sub:
       check foo.first == 1
 
   test "more complex AST":
-
     var foo = Foo(first: 1, second: "two", third: 3.0)
-
     with foo:
       proc test() =
         check first == 1
@@ -88,49 +76,69 @@ suite "with":
         check third == 3.0
 
   test "skip dot expressions":
-
     var foo = Foo(first: 1, second: "two", third: 3.0)
-
     with foo:
       first = 2
       foo.first = 3
 
-  test "shadowing":
-
+  test "shadow by const":
     var foo = (first: 1, second: "two", third: 3.0)
-
     with foo:
-
-      foo.first = 2
-      check first == 2
-      check foo.first == 2
-
-      first = 3
-      check first == 3
-      check foo.first == 3
-
-      # const
-
-      if true:
+      block:
         const first = "dragons"
         check first == "dragons"
-        check foo.first == 3
-      check first == 3
-      check foo.first == 3
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
 
-      # let
+  test "shadow by let":
+    var foo = (first: 1, second: "two", third: 3.0)
+    with foo:
+      block:
+        let first = "dragons"
+        check first == "dragons"
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
 
-      check second == "two"
-      let second = 44
-      check second == 44
-      check foo.second == "two"
+  test "shadow by var":
+    var foo = (first: 1, second: "two", third: 3.0)
+    with foo:
+      block:
+        var first = "dragons"
+        check first == "dragons"
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
 
-      # var
+  test "shadow by var2":
+    var foo = (first: 1, second: "two", third: 3.0)
+    with foo:
+      block:
+        var first: string
+        check first == ""
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
 
-      check third == 3.0
-      if true:
-        var third = 42.0
-        check third == 42.0
-      check third == 3.0
-      check foo.third == 3.0
+  test "shadow by proc":
+    var foo = (first: 1, second: "two", third: 3.0)
+    with foo:
+      block:
+        proc first(): string = "dragons"
+        check first() == "dragons"
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
+
+  test "proc member":
+    proc fn1(v: int): int = v+1
+    var bar = Bar(fn: fn1)
+    with bar:
+      block:
+        check fn(1) == 2
+        proc fn(v: int): int = v+2
+        check fn(1) == 3
+      check fn(1) == 2
+
 
