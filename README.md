@@ -33,10 +33,10 @@ with foo:
 ```
 
 
-Fields from the object can be shadowed by new declarations. Use the fully
-qualified dot notation to access the original member if the field has been
-shadowed. Shadowing is only effictive in the scope where the new declaration
-was made, outside that scope the original `with` behaviour applies:
+Fields from the object can be shadowed by new declarations in the scope where
+the new declaration is made. The object field can still be accessed by using its
+full dot-expression notation:
+
 
 ```nim
 var foo = (first: 1, second: "two")
