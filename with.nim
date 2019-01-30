@@ -4,44 +4,51 @@ import hashes
 import strutils
 import tables
 
-# Style insensitive table for identifier lookups
+# Style insensitive table for field lookups
 
 type Fields = Table[NimNode, NimNode]
 proc hash(n: NimNode): Hash = hashIgnoreStyle(n.strVal)
 proc `==`(a, b: NimNode): bool = cmpIgnoreStyle(a.strVal, b.strVal) == 0
 
 
-# Collect field identifiers from object or tuple
+# Things that can shadow a field
+
+const shadowSections = { nnkConstSection, nnkLetSection, nnkVarSection }
+
+const shadowDefs = { nnkProcDef, nnkFuncDef, nnkIteratorDef, 
+                     nnkConverterDef, nnkTemplateDef, nnkMacroDef }
+
+
+# Collect field symbols from a object or a tuple
 
 proc collectFields(obj: NimNode, fields: var Fields) =
 
-  # Get the type of the object, de-ref if needed
+  # Get the implementation of the object, de-ref if needed
 
-  var typ = obj.getTypeImpl
-  if typ.kind == nnkRefTy:
-    typ = typ[0].getTypeImpl
+  var impl = obj.getTypeImpl
+  if impl.kind == nnkRefTy:
+    impl = impl[0].getTypeImpl
+  impl.expectKind {nnkObjectTy,nnkTupleTy}
 
-  # Extract fields from object or tuple
+  if impl.kind == nnkObjectTy:
+    impl = impl[2]
+  
+  # Get fields from object or tuple
 
-  if typ.kind == nnkObjectTy:
-    for id in typ[2]:
-      fields[id[0]] = obj
-  elif typ.kind == nnkTupleTy:
-    for id in typ:
-      fields[id[0]] = obj
-  else:
-    error "Expected object or tuple"
+  for id in impl:
+    let sym = id[0]
+    fields[sym] = obj
 
 
 # Helper function for recursing through the code block
 
 proc doBlock(n: NimNode, fields: var Fields): NimNode =
 
-  # fields can be shadowed by operations that declare new symbols
+  # fields can be shadowed by declaration of a new symbol
 
-  if n.kind in {nnkConstSection,nnkLetSection,nnkVarSection}:
+  if n.kind in shadowSections:
     for nid in n: fields.del nid[0]
-  if n.kind in {nnkProcDef,nnkFuncDef,nnkIteratorDef,nnkConverterDef}:
+  if n.kind in shadowDefs:
     fields.del n[0]
 
   # Replace identifier with dotExpr(obj.field) if found in fields list

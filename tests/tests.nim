@@ -1,5 +1,6 @@
 import unittest
 import with
+import macros
 
 type
 
@@ -130,7 +131,17 @@ suite "with":
         check foo.first == 1
       check first == 1
       check foo.first == 1
-
+  
+  test "shadow by template":
+    var foo = (first: 1, second: "two", third: 3.0)
+    with foo:
+      block:
+        template first(): string = "dragons"
+        check first() == "dragons"
+        check foo.first == 1
+      check first == 1
+      check foo.first == 1
+  
   test "proc member":
     proc fn1(v: int): int = v+1
     var bar = Bar(fn: fn1)
