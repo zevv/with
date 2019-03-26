@@ -23,21 +23,30 @@ const shadowDefs = { nnkProcDef, nnkFuncDef, nnkIteratorDef,
 
 proc collectFields(obj: NimNode, fields: var Fields) =
 
-  # Get the implementation of the object, de-ref if needed
+  proc aux(n: NimNode, fields: var Fields) =
 
-  var impl = obj.getTypeImpl
-  if impl.kind == nnkRefTy:
-    impl = impl[0].getTypeImpl
-  impl.expectKind {nnkObjectTy,nnkTupleTy}
+    # Get the implementation of the object, de-ref if needed
 
-  if impl.kind == nnkObjectTy:
-    impl = impl[2]
-  
-  # Get fields from object or tuple
+    var impl = n.getTypeImpl
+    if impl.kind == nnkRefTy:
+      impl = impl[0].getTypeImpl
+    impl.expectKind {nnkObjectTy,nnkTupleTy}
 
-  for id in impl:
-    let sym = id[0]
-    fields[sym] = obj
+    # Recurse parent objects
+
+    if impl.kind == nnkObjectTy:
+      if impl[1].kind == nnkOfInherit:
+        aux(impl[1][0], fields)
+      impl = impl[2]
+
+    # Get fields from object or tuple
+
+    for id in impl:
+      let sym = id[0]
+      fields[sym] = obj
+      echo "field ", sym, " ", impl.repr
+
+  aux obj, fields
 
 
 # Helper function for recursing through the code block
