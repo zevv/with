@@ -1,5 +1,5 @@
 
-> `with` is fun, but as its own project it should have a splash image like "Inspired by a forbidden(TM) JavaScript feature!"
+> _`with` is fun, but as its own project it should have a splash image like "Inspired by a forbidden(TM) JavaScript feature!"_
 > -jrfondren
 
 `with` is a simple macro to replace the deprecated ``{.with.}`` pragma in Nim.
