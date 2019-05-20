@@ -1,4 +1,7 @@
 
+> `with` is fun, but as its own project it should have a splash image like "Inspired by a forbidden(TM) JavaScript feature!"
+> -jrfondren
+
 `with` is a simple macro to replace the deprecated ``{.with.}`` pragma in Nim.
 This macro looks up all identifiers in a code block to see if they are known
 field names for the given object or tuple. If a match is found, the identifier
