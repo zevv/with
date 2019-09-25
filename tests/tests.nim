@@ -152,4 +152,13 @@ suite "with":
         check fn(1) == 3
       check fn(1) == 2
 
+  test "visible through template":
+    template t1(): untyped =
+      field1
+    var foo = (field1: 100, field2: "something")
+    with foo:
+      check t1() == 100
+      check field1 == 100
+      check field2 == "something"
+
 

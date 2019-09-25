@@ -1,90 +1,40 @@
+## This module only contains a single, but rather useful macro. The ``with``
+## macro allows you to put all the fields of an object or tuple into the
+## scope of the block that is passed in. This is useful in instances where you
+## take in an object to a procedure that only does work on this object, for
+## example an initialiser or what would normally be seen as a method in a
+## object oriented approach.
 
 import macros
-import hashes
-import strutils
-import tables
 
-# Style insensitive table for field lookups
-
-type Fields = Table[NimNode, NimNode]
-proc hash(n: NimNode): Hash = hashIgnoreStyle(n.strVal)
-proc `==`(a, b: NimNode): bool = cmpIgnoreStyle(a.strVal, b.strVal) == 0
-
-
-# Things that can shadow a field
-
-const shadowSections = { nnkConstSection, nnkLetSection, nnkVarSection }
-
-const shadowDefs = { nnkProcDef, nnkFuncDef, nnkIteratorDef, 
-                     nnkConverterDef, nnkTemplateDef, nnkMacroDef }
-
-
-# Collect field symbols from a object or a tuple
-
-proc collectFields(obj: NimNode, fields: var Fields) =
-
-  proc aux(n: NimNode, fields: var Fields) =
-
-    # Get the implementation of the object, de-ref if needed
-
-    var impl = n.getTypeImpl
-    if impl.kind == nnkRefTy:
-      impl = impl[0].getTypeImpl
-    impl.expectKind {nnkObjectTy,nnkTupleTy}
-
-    # Recurse parent objects
-
-    if impl.kind == nnkObjectTy:
-      if impl[1].kind == nnkOfInherit:
-        aux(impl[1][0], fields)
-      impl = impl[2]
-
-    # Get fields from object or tuple
-
-    for id in impl:
-      let sym = id[0]
-      fields[sym] = obj
-      echo "field ", sym, " ", impl.repr
-
-  aux obj, fields
-
-
-# Helper function for recursing through the code block
-
-proc doBlock(n: NimNode, fields: var Fields): NimNode =
-
-  # fields can be shadowed by declaration of a new symbol
-
-  if n.kind in shadowSections:
-    for nid in n: fields.del nid[0]
-  if n.kind in shadowDefs:
-    fields.del n[0]
-
-  # Replace identifier with dotExpr(obj.field) if found in fields list
-
-  if n.kind == nnkIdent:
-    if n in fields:
-      return newDotExpr(fields[n], n)
-
-  # Recurse through all children
-
-  var fields = fields
-  result = copyNimNode(n)
-  for i, nc in n.pairs:
-    if n.kind == nnkDotExpr and i != 0:
-      result.add nc
+proc createInner(x: NimNode): NimNode =
+  result = newStmtList()
+  var t = getTypeImpl(x)
+  if t.kind == nnkRefTy:
+    t = getTypeImpl(t[0])
+  assert(t.kind in {nnkObjectTy, nnkTupleTy}, "`with` must be called with " &
+    "either objects or tuples.")
+  for field in (if t.kind == nnkObjectTy: t[2] else: t):
+    let name = newIdentNode($field[0])
+    if field[1].kind == nnkProcTy:
+      result.add quote do:
+        template `name`(args: varargs[untyped]): untyped =
+            `x`.`name`(args)
     else:
-      result.add doBlock(nc, fields)
+      result.add quote do:
+        template `name`(): untyped =
+          `x`.`name`
 
-
-macro with*(obj: typed, cs: untyped): untyped =
-  var fields = initTable[NimNode, NimNode]()
-  if obj.kind == nnkTupleConstr:
-    for cobj in obj:
-      collectFields(cobj, fields)
+macro with*(x: typed, body: untyped): untyped =
+  ## ``x`` can be either an object, a tuple, or a tuple of objects and tuples.
+  ## ``body`` is just any block of code that should be run with the fields of
+  ## ``x`` (or the fields of all objects and tuples if multiple were given)
+  ## visible to it.
+  result = newStmtList()
+  if x.kind == nnkTupleConstr:
+    for y in x:
+      result.add createInner(y)
   else:
-    collectFields(obj, fields)
-  result = doBlock(cs, fields)
-
-# vi: ft=nim et ts=2 sw=2
-
+    result.add createInner(x)
+  result.add body
+  result = nnkBlockStmt.newTree(newEmptyNode(), result)
