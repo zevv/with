@@ -1,10 +1,10 @@
-version       = "0.3.0"
+version       = "0.4.0"
 author        = "zevv"
 description   = "Simple 'with' macro for Nim"
 license       = "MIT"
 skipDirs      = @["tests"]
 
-requires "nim >= 0.17.1"
+requires "nim >= 0.19.0"
 
 task test, "Run tests":
   exec "nim c -r " & "tests/tests.nim"

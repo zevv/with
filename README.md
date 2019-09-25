@@ -3,9 +3,9 @@
 > -jrfondren
 
 `with` is a simple macro to replace the deprecated ``{.with.}`` pragma in Nim.
-This macro looks up all identifiers in a code block to see if they are known
-field names for the given object or tuple. If a match is found, the identifier
-is replaced by a dot expression ``obj.field``.
+This macro allow you to access fields of an object or tuple without having to
+repeatedly type its name. It works by creating tiny templates with the same
+name as the field that expand to access to the field in the object.
 
 Example:
 
