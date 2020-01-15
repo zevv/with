@@ -7,6 +7,13 @@
 
 import macros
 
+proc getAllIdentDefs(x: NimNode): seq[NimNode] =
+  for n in x:
+    if n.kind == nnkIdentDefs:
+      result &= n
+    elif n.kind in {nnkRecCase, nnkRecList, nnkOfBranch, nnkElse}:
+      result &= getAllIdentDefs(n)
+
 proc createInner(x: NimNode): NimNode =
   result = newStmtList()
   var t = getTypeImpl(x)
@@ -14,7 +21,7 @@ proc createInner(x: NimNode): NimNode =
     t = getTypeImpl(t[0])
   assert(t.kind in {nnkObjectTy, nnkTupleTy}, "`with` must be called with " &
     "either objects or tuples.")
-  for field in (if t.kind == nnkObjectTy: t[2] else: t):
+  for field in getAllIdentDefs(if t.kind == nnkObjectTy: t[2] else: t):
     let name = newIdentNode($field[0])
     if field[1].kind == nnkProcTy:
       result.add quote do:
