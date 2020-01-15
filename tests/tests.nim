@@ -17,6 +17,22 @@ type
   Sub = object
     foo: Foo
 
+  Cases = object
+    x: int
+    case cond: int8
+    of 1:
+      case secondCond: bool
+      of true: 
+        y: int
+      of false: 
+        z: string
+        w: int
+    of 2:
+      a: int
+    else:
+      b: float
+
+
 suite "with":
 
   test "basic object":
@@ -161,4 +177,13 @@ suite "with":
       check field1 == 100
       check field2 == "something"
 
-
+  test "fields in case":
+    var cases = Cases(cond: 1, secondCond: false, x: 123, z: "hello", w: 321)
+    with cases:
+      check secondCond == false
+      check x == 123
+      check z == "hello"
+      check w == 321
+      check compiles(y == 0)
+      check compiles(a == 0)
+      check compiles(b == 0.0)
