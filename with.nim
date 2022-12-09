@@ -7,7 +7,11 @@
 
 import macros
 
-proc getAllIdentDefs(x: NimNode): seq[NimNode] =
+proc getAllIdentDefs(y: NimNode): seq[NimNode] =
+  if y.kind == nnkObjectTy:
+    if y[1].kind == nnkOfInherit:
+      result &= getAllIdentDefs(y[1][0].getImpl[2])
+  let x = if y.kind == nnkObjectTy: y[2] else: y
   for n in x:
     if n.kind == nnkIdentDefs:
       result &= n
@@ -21,7 +25,7 @@ proc createInner(x: NimNode): NimNode =
     t = getTypeImpl(t[0])
   assert(t.kind in {nnkObjectTy, nnkTupleTy}, "`with` must be called with " &
     "either objects or tuples.")
-  for field in getAllIdentDefs(if t.kind == nnkObjectTy: t[2] else: t):
+  for field in getAllIdentDefs(t):
     let name = newIdentNode($field[0])
     if field[1].kind == nnkProcTy:
       result.add quote do:

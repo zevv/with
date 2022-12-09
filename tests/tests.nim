@@ -1,6 +1,5 @@
 import unittest
 import with
-import macros
 
 type
 
@@ -31,6 +30,18 @@ type
       a: int
     else:
       b: float
+
+  BaseObject = object of RootObj
+    first: int
+
+  ChildObject = object of BaseObject
+    second: string
+
+  BaseObjectRef = ref object of RootObj
+    first: int
+
+  ChildObjectRef = ref object of BaseObject
+    second: string
 
 
 suite "with":
@@ -187,3 +198,15 @@ suite "with":
       check compiles(y == 0)
       check compiles(a == 0)
       check compiles(b == 0.0)
+
+  test "inheriting object":
+    var foo = ChildObject(first: 1, second: "two")
+    with foo:
+      check first == 1
+      check second == "two"
+
+  test "inheriting reference object":
+    var foo = ChildObjectRef(first: 1, second: "two")
+    with foo:
+      check first == 1
+      check second == "two"
