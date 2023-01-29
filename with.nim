@@ -8,6 +8,8 @@
 import macros
 
 proc getAllIdentDefs(y: NimNode): seq[NimNode] =
+  if y.kind == nnkRefTy and y[0].kind == nnkObjectTy:
+    return getAllIdentDefs(y[0])
   if y.kind == nnkObjectTy:
     if y[1].kind == nnkOfInherit:
       result &= getAllIdentDefs(y[1][0].getImpl[2])
